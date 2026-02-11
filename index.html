@@ -71,7 +71,7 @@
         <div class="bg-white w-full max-w-md rounded-[2.5rem] p-8 animate__animated animate__zoomIn my-auto">
             <h3 class="text-xl font-bold mb-4">Chef Management</h3>
             
-            <div class="mb-6 border-b pb-6">
+            <div class="mb-6 border-b pb-6 text-left">
                 <p class="text-sm font-bold text-gray-400 mb-2 uppercase">Add New Dish</p>
                 <input type="text" id="food-name" placeholder="Dish Name (e.g. Abacha)" class="w-full p-4 mb-3 bg-gray-100 rounded-2xl outline-none">
                 <input type="number" id="food-price" placeholder="Price (₦)" class="w-full p-4 mb-3 bg-gray-100 rounded-2xl outline-none">
@@ -82,11 +82,11 @@
             <div id="delete-list" class="max-h-40 overflow-y-auto mb-4 text-left">
                 </div>
             
-            <button onclick="closeAdmin()" class="w-full py-2 text-gray-400 font-bold">Close Panel</button>
+            <button onclick="closeAdmin()" class="w-full py-2 text-gray-400 font-bold text-center">Close Panel</button>
         </div>
     </div>
 
-    <footer class="text-center py-12 text-gray-400 text-sm" onclick="openAdmin()">
+    <footer class="text-center py-12 text-gray-400 text-sm cursor-pointer relative z-[200]" onclick="openAdmin()">
         <p>&copy; 2026 Native Pot. All rights reserved. • Admin Access</p>
     </footer>
 
@@ -103,49 +103,55 @@
 
         // Load Menu from Supabase
         async function loadMenu() {
-            const { data, error } = await supabase.from('menu').select('*').order('created_at', { ascending: false });
-            const container = document.getElementById('menu-container');
-            const deleteList = document.getElementById('delete-list');
-            
-            if (data && data.length > 0) {
-                // Clear the main container if there is dynamic data
-                container.innerHTML = ''; 
-                
-                data.forEach(item => {
-                    container.innerHTML += `
-                        <div class="food-card bg-white rounded-3xl overflow-hidden shadow-lg border border-orange-50 animate__animated animate__fadeInUp">
-                            <div class="h-48 bg-cover bg-center" style="background-image: url('${item.image}')"></div>
-                            <div class="p-6">
-                                <div class="flex justify-between items-center">
-                                    <h3 class="text-xl font-bold text-gray-800">${item.name}</h3>
-                                    <span class="text-orange-700 font-bold">₦${Number(item.price).toLocaleString()}</span>
-                                </div>
-                                <button onclick="addToPot('${item.name}', ${item.price})" class="mt-6 w-full bg-orange-600 text-white py-3 rounded-2xl font-bold shadow-lg shadow-orange-200 active:scale-95 transition">Add to Pot</button>
-                            </div>
-                        </div>
-                    `;
-                });
+            try {
+                const { data, error } = await supabase.from('menu').select('*').order('created_at', { ascending: false });
+                if (error) throw error;
 
-                deleteList.innerHTML = `<p class="text-xs font-bold text-gray-400 mb-2 uppercase">Tap to Delete:</p>` + 
-                    data.map(item => `
-                    <div onclick="deleteItem(${item.id})" class="flex justify-between items-center p-2 mb-2 bg-red-50 text-red-600 rounded-lg text-sm cursor-pointer border border-red-100">
-                        <span>${item.name}</span>
-                        <span class="font-bold">🗑️</span>
-                    </div>
-                `).join('');
+                const container = document.getElementById('menu-container');
+                const deleteList = document.getElementById('delete-list');
+                
+                if (data && data.length > 0) {
+                    container.innerHTML = ''; 
+                    
+                    data.forEach(item => {
+                        container.innerHTML += `
+                            <div class="food-card bg-white rounded-3xl overflow-hidden shadow-lg border border-orange-50 animate__animated animate__fadeInUp">
+                                <div class="h-48 bg-cover bg-center" style="background-image: url('${item.image}')"></div>
+                                <div class="p-6">
+                                    <div class="flex justify-between items-center">
+                                        <h3 class="text-xl font-bold text-gray-800">${item.name}</h3>
+                                        <span class="text-orange-700 font-bold">₦${Number(item.price).toLocaleString()}</span>
+                                    </div>
+                                    <button onclick="addToPot('${item.name}', ${item.price})" class="mt-6 w-full bg-orange-600 text-white py-3 rounded-2xl font-bold shadow-lg shadow-orange-200 active:scale-95 transition">Add to Pot</button>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    deleteList.innerHTML = `<p class="text-xs font-bold text-gray-400 mb-2 uppercase">Tap to Delete:</p>` + 
+                        data.map(item => `
+                        <div onclick="deleteItem(${item.id})" class="flex justify-between items-center p-2 mb-2 bg-red-50 text-red-600 rounded-lg text-sm cursor-pointer border border-red-100">
+                            <span>${item.name}</span>
+                            <span class="font-bold">🗑️</span>
+                        </div>
+                    `).join('');
+                }
+            } catch (err) {
+                console.error("Menu failed to load:", err.message);
             }
         }
 
         // Upload Direct Photo to Cloudinary
         async function uploadAndSave() {
-            const file = document.getElementById('photo-file').files[0];
+            const fileInput = document.getElementById('photo-file');
+            const file = fileInput.files[0];
             const name = document.getElementById('food-name').value;
             const price = document.getElementById('food-price').value;
             const btn = document.getElementById('save-btn');
 
-            if(!file || !name || !price) return alert("Fill everything and pick a photo!");
+            if(!file || !name || !price) return alert("Please enter name, price, and select a photo!");
 
-            btn.innerText = "Uploading...";
+            btn.innerText = "Processing...";
             btn.disabled = true;
 
             const formData = new FormData();
@@ -156,11 +162,15 @@
                 const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: formData });
                 const imgData = await res.json();
                 
+                if (imgData.error) throw new Error(imgData.error.message);
+
                 // Save to Supabase
-                await supabase.from('menu').insert([{ name, price, image: imgData.secure_url }]);
+                const { error } = await supabase.from('menu').insert([{ name, price, image: imgData.secure_url }]);
+                if (error) throw error;
+
                 location.reload();
             } catch (err) {
-                alert("Upload failed. Check your preset name!");
+                alert("Error: " + err.message + ". Check if your Cloudinary Preset is set to 'Unsigned'.");
                 btn.innerText = "Save to Site";
                 btn.disabled = false;
             }
@@ -168,8 +178,9 @@
 
         async function deleteItem(id) {
             if(confirm("Remove this dish from the menu?")) {
-                await supabase.from('menu').delete().eq('id', id);
-                location.reload();
+                const { error } = await supabase.from('menu').delete().eq('id', id);
+                if (error) alert("Delete failed: " + error.message);
+                else location.reload();
             }
         }
 
