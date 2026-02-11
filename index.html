@@ -14,14 +14,24 @@
         /* Added for Cart animation */
         .cart-bounce { animation: bounce 0.5s; }
         @keyframes bounce { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); } }
-        #admin-modal, #order-modal { background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); }
+        #admin-modal, #order-modal, #loading-overlay { background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); }
         
         /* Force buttons to be clickable even if layers overlap */
         button, footer, span { cursor: pointer !important; pointer-events: auto !important; position: relative; z-index: 10; }
         #admin-modal { z-index: 9999 !important; }
+
+        /* Spinner for the turbo upload */
+        .spinner { border: 4px solid rgba(255,255,255,0.3); border-top: 4px solid #ea580c; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="pb-32">
+
+    <div id="loading-overlay" class="fixed inset-0 z-[10000] hidden flex flex-col items-center justify-center text-white">
+        <div class="spinner mb-4"></div>
+        <p class="font-bold animate-pulse text-lg">Cooking your new dish...</p>
+        <p class="text-sm text-gray-400 mt-2">Uploading to menu</p>
+    </div>
 
     <header class="p-6 bg-white shadow-sm sticky top-0 z-50">
         <nav class="max-w-5xl mx-auto flex justify-between items-center">
@@ -167,30 +177,60 @@
             if (deleteDiv) { deleteItem(deleteDiv.getAttribute('data-delete-id')); }
         });
 
+        // --- TURBO COMPRESSION & UPLOAD ---
+        function compressImage(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 800; // Speed optimization: scale down to 800px
+                        const scaleSize = MAX_WIDTH / img.width;
+                        canvas.width = MAX_WIDTH;
+                        canvas.height = img.height * scaleSize;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        canvas.toBlob((blob) => resolve(blob), 'image/jpeg', 0.7); // 70% quality for lightning speed
+                    };
+                };
+            });
+        }
+
         async function uploadAndSave() {
             const fileInput = document.getElementById('photo-file');
             const file = fileInput.files[0];
             const name = document.getElementById('food-name').value;
             const price = document.getElementById('food-price').value;
             const btn = document.getElementById('save-btn');
+            const loader = document.getElementById('loading-overlay');
 
             if(!file || !name || !price) return alert("Please enter name, price, and select a photo!");
-            btn.innerText = "Processing...";
+            
+            // Show turbo loader
+            loader.classList.remove('hidden');
             btn.disabled = true;
 
-            const formData = new FormData();
-            formData.append('file', file);
-            formData.append('upload_preset', CLOUDINARY_PRESET);
-            
             try {
+                // Compress before upload
+                const compressedBlob = await compressImage(file);
+                
+                const formData = new FormData();
+                formData.append('file', compressedBlob);
+                formData.append('upload_preset', CLOUDINARY_PRESET);
+                
                 const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: formData });
                 const imgData = await res.json();
+                
                 const { error } = await supabase.from('menu').insert([{ name, price, image: imgData.secure_url }]);
                 if (error) throw error;
+                
                 location.reload();
             } catch (err) {
                 alert("Error: " + err.message);
-                btn.innerText = "Save to Site";
+                loader.classList.add('hidden');
                 btn.disabled = false;
             }
         }
