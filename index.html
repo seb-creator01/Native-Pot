@@ -187,36 +187,33 @@
                     img.src = event.target.result;
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
-                        const MAX_WIDTH = 800; // Speed optimization: scale down to 800px
+                        const MAX_WIDTH = 800;
                         const scaleSize = MAX_WIDTH / img.width;
                         canvas.width = MAX_WIDTH;
                         canvas.height = img.height * scaleSize;
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                        canvas.toBlob((blob) => resolve(blob), 'image/jpeg', 0.7); // 70% quality for lightning speed
+                        canvas.toBlob((blob) => resolve(blob), 'image/jpeg', 0.7);
                     };
                 };
             });
         }
 
-        async function uploadAndSave() {
+        // CONSISTENT SAVE LOGIC
+        document.getElementById('save-btn').addEventListener('click', async function() {
             const fileInput = document.getElementById('photo-file');
             const file = fileInput.files[0];
             const name = document.getElementById('food-name').value;
             const price = document.getElementById('food-price').value;
-            const btn = document.getElementById('save-btn');
             const loader = document.getElementById('loading-overlay');
 
             if(!file || !name || !price) return alert("Please enter name, price, and select a photo!");
             
-            // Show turbo loader
             loader.classList.remove('hidden');
-            btn.disabled = true;
+            this.disabled = true;
 
             try {
-                // Compress before upload
                 const compressedBlob = await compressImage(file);
-                
                 const formData = new FormData();
                 formData.append('file', compressedBlob);
                 formData.append('upload_preset', CLOUDINARY_PRESET);
@@ -231,11 +228,9 @@
             } catch (err) {
                 alert("Error: " + err.message);
                 loader.classList.add('hidden');
-                btn.disabled = false;
+                this.disabled = false;
             }
-        }
-
-        document.getElementById('save-btn').onclick = uploadAndSave;
+        });
 
         async function deleteItem(id) {
             if(confirm("Remove this dish from the menu?")) {
