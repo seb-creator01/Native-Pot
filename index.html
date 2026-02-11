@@ -17,7 +17,7 @@
         #admin-modal, #order-modal { background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); }
         
         /* Force buttons to be clickable even if layers overlap */
-        button, footer { cursor: pointer !important; pointer-events: auto !important; position: relative; z-index: 10; }
+        button, footer, span { cursor: pointer !important; pointer-events: auto !important; position: relative; z-index: 10; }
     </style>
 </head>
 <body class="pb-32">
@@ -104,11 +104,23 @@
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         let pot = [];
 
+        // LOAD MENU (Moved inside a listener to prevent blocking buttons)
+        document.addEventListener('DOMContentLoaded', () => {
+            loadMenu();
+        });
+
         // Global functions to ensure they are clickable everywhere
-        window.openAdmin = function() { document.getElementById('admin-modal').classList.remove('hidden'); }
-        window.closeAdmin = function() { document.getElementById('admin-modal').classList.add('hidden'); }
+        window.openAdmin = function() { 
+            console.log("Opening Admin...");
+            document.getElementById('admin-modal').classList.remove('hidden'); 
+        }
+        
+        window.closeAdmin = function() { 
+            document.getElementById('admin-modal').classList.add('hidden'); 
+        }
         
         window.addToPot = function(name, price) {
+            console.log("Adding to pot:", name);
             pot.push({name, price});
             updateUI();
             const counter = document.getElementById('cart-counter');
@@ -131,7 +143,6 @@
             window.open(url, '_blank');
         }
 
-        // Load Menu from Supabase
         async function loadMenu() {
             try {
                 const { data, error } = await supabase.from('menu').select('*').order('created_at', { ascending: false });
@@ -166,12 +177,11 @@
                     `).join('');
                 }
             } catch (err) {
-                console.error("Menu failed to load:", err.message);
+                console.log("Database load skipped or empty.");
             }
         }
 
-        // Upload Direct Photo to Cloudinary
-        async function uploadAndSave() {
+        window.uploadAndSave = async function() {
             const fileInput = document.getElementById('photo-file');
             const file = fileInput.files[0];
             const name = document.getElementById('food-name').value;
@@ -203,7 +213,7 @@
             }
         }
 
-        async function deleteItem(id) {
+        window.deleteItem = async function(id) {
             if(confirm("Remove this dish from the menu?")) {
                 const { error } = await supabase.from('menu').delete().eq('id', id);
                 if (error) alert("Delete failed: " + error.message);
@@ -221,8 +231,6 @@
             if(pot.length > 0) bar.classList.remove('translate-y-40');
             else bar.classList.add('translate-y-40');
         }
-
-        loadMenu();
     </script>
 </body>
 </html>
