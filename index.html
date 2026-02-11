@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Native Pot | Authentic Delicacies</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #fdfaf7; }
+        .food-card:hover { transform: translateY(-10px); transition: 0.3s; }
+    </style>
+</head>
+<body>
+
+    <header class="p-6 bg-white shadow-sm sticky top-0 z-50">
+        <nav class="max-w-5xl mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-orange-700 tracking-tighter">NATIVE POT</h1>
+            <div class="bg-orange-100 text-orange-700 px-4 py-1 rounded-full text-sm font-bold">Open Now</div>
+        </nav>
+    </header>
+
+    <section class="p-8 text-center animate__animated animate__fadeIn">
+        <h2 class="text-4xl font-extrabold text-gray-900 leading-tight">Authentic taste, <br><span class="text-orange-600">delivered to your door.</span></h2>
+        <p class="mt-4 text-gray-600">Experience the finest native delicacies made with love and tradition.</p>
+    </section>
+
+    <main class="max-w-5xl mx-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+        
+        <div class="food-card bg-white rounded-3xl overflow-hidden shadow-lg border border-orange-50 animate__animated animate__fadeInUp">
+            <div class="h-48 bg-orange-200 bg-[url('https://images.unsplash.com/photo-1574484284002-952d92456975?auto=format&fit=crop&w=800&q=80')] bg-cover bg-center"></div>
+            <div class="p-6">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-xl font-bold text-gray-800">Special Jollof</h3>
+                    <span class="text-orange-700 font-bold">₦4,500</span>
+                </div>
+                <p class="text-gray-500 text-sm mt-2">Smokey party Jollof served with fried plantain and choice of protein.</p>
+                <button onclick="orderWhatsApp('Special Jollof')" class="mt-6 w-full bg-orange-600 text-white py-3 rounded-2xl font-bold shadow-lg shadow-orange-200 active:scale-95 transition">Order Now</button>
+            </div>
+        </div>
+
+        <div class="food-card bg-white rounded-3xl overflow-hidden shadow-lg border border-orange-50 animate__animated animate__fadeInUp" style="animation-delay: 0.2s;">
+            <div class="h-48 bg-orange-200 bg-[url('https://images.unsplash.com/photo-1610614819513-58e34989848b?auto=format&fit=crop&w=800&q=80')] bg-cover bg-center"></div>
+            <div class="p-6">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-xl font-bold text-gray-800">Egusi & Swallow</h3>
+                    <span class="text-orange-700 font-bold">₦5,000</span>
+                </div>
+                <p class="text-gray-500 text-sm mt-2">Rich Egusi soup with assorted meats, served with fluffy pounded yam.</p>
+                <button onclick="orderWhatsApp('Egusi & Swallow')" class="mt-6 w-full bg-orange-600 text-white py-3 rounded-2xl font-bold shadow-lg shadow-orange-200 active:scale-95 transition">Order Now</button>
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="text-center py-12 text-gray-400 text-sm">
+        <p>&copy; 2026 Native Pot. All rights reserved.</p>
+    </footer>
+
+    <script>
+        function orderWhatsApp(itemName) {
+            const phoneNumber = "23480XXXXXXXX"; // REPLACE WITH YOUR FRIEND'S NUMBER
+            const message = `Hello Native Pot! I would like to order the ${itemName}.`;
+            const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+            window.open(url, '_blank');
+        }
+    </script>
+</body>
+</html>
