@@ -15,6 +15,9 @@
         .cart-bounce { animation: bounce 0.5s; }
         @keyframes bounce { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); } }
         #admin-modal, #order-modal { background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); }
+        
+        /* Force buttons to be clickable even if layers overlap */
+        button, footer { cursor: pointer !important; pointer-events: auto !important; position: relative; z-index: 10; }
     </style>
 </head>
 <body class="pb-32">
@@ -87,7 +90,7 @@
     </div>
 
     <footer class="text-center py-12 text-gray-400 text-sm cursor-pointer relative z-[200]" onclick="openAdmin()">
-        <p>&copy; 2026 Native Pot. All rights reserved. • Admin Access</p>
+        <p>&copy; 2026 Native Pot. All rights reserved. • <span class="underline text-orange-600 font-bold">Admin Access</span></p>
     </footer>
 
     <script>
@@ -101,6 +104,33 @@
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         let pot = [];
 
+        // Global functions to ensure they are clickable everywhere
+        window.openAdmin = function() { document.getElementById('admin-modal').classList.remove('hidden'); }
+        window.closeAdmin = function() { document.getElementById('admin-modal').classList.add('hidden'); }
+        
+        window.addToPot = function(name, price) {
+            pot.push({name, price});
+            updateUI();
+            const counter = document.getElementById('cart-counter');
+            counter.classList.add('cart-bounce');
+            setTimeout(() => counter.classList.remove('cart-bounce'), 500);
+        }
+
+        window.clearPot = function() {
+            if(confirm("Do you want to empty your pot?")) {
+                pot = [];
+                updateUI();
+            }
+        }
+
+        window.sendOrder = function() {
+            let itemsList = pot.map(item => `- ${item.name} (₦${item.price.toLocaleString()})`).join('\n');
+            let total = pot.reduce((sum, item) => sum + item.price, 0);
+            let message = `*NEW ORDER FROM NATIVE POT*\n\nItems:\n${itemsList}\n\n*Total: ₦${total.toLocaleString()}*\n\nPlease confirm my order!`;
+            const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+            window.open(url, '_blank');
+        }
+
         // Load Menu from Supabase
         async function loadMenu() {
             try {
@@ -112,7 +142,6 @@
                 
                 if (data && data.length > 0) {
                     container.innerHTML = ''; 
-                    
                     data.forEach(item => {
                         container.innerHTML += `
                             <div class="food-card bg-white rounded-3xl overflow-hidden shadow-lg border border-orange-50 animate__animated animate__fadeInUp">
@@ -161,16 +190,14 @@
             try {
                 const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: formData });
                 const imgData = await res.json();
-                
                 if (imgData.error) throw new Error(imgData.error.message);
 
-                // Save to Supabase
                 const { error } = await supabase.from('menu').insert([{ name, price, image: imgData.secure_url }]);
                 if (error) throw error;
 
                 location.reload();
             } catch (err) {
-                alert("Error: " + err.message + ". Check if your Cloudinary Preset is set to 'Unsigned'.");
+                alert("Error: " + err.message);
                 btn.innerText = "Save to Site";
                 btn.disabled = false;
             }
@@ -184,54 +211,16 @@
             }
         }
 
-        function addToPot(name, price) {
-            pot.push({name, price});
-            updateUI();
-            
-            const counter = document.getElementById('cart-counter');
-            counter.classList.add('cart-bounce');
-            setTimeout(() => counter.classList.remove('cart-bounce'), 500);
-        }
-
-        function clearPot() {
-            if(confirm("Do you want to empty your pot?")) {
-                pot = [];
-                updateUI();
-            }
-        }
-
         function updateUI() {
             const bar = document.getElementById('checkout-bar');
             const totalDisplay = document.getElementById('total-price');
             const counter = document.getElementById('cart-counter');
-            
             let total = pot.reduce((sum, item) => sum + item.price, 0);
-            
             counter.innerText = pot.length;
             totalDisplay.innerText = `₦${total.toLocaleString()}`;
-            
-            if(pot.length > 0) {
-                bar.classList.remove('translate-y-40');
-            } else {
-                bar.classList.add('translate-y-40');
-            }
+            if(pot.length > 0) bar.classList.remove('translate-y-40');
+            else bar.classList.add('translate-y-40');
         }
-
-        function sendOrder() {
-            let itemsList = pot.map(item => `- ${item.name} (₦${item.price.toLocaleString()})`).join('\n');
-            let total = pot.reduce((sum, item) => sum + item.price, 0);
-            
-            let message = `*NEW ORDER FROM NATIVE POT*\n\n` +
-                          `Items:\n${itemsList}\n\n` +
-                          `*Total: ₦${total.toLocaleString()}*\n\n` +
-                          `Please confirm my order!`;
-            
-            const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
-            window.open(url, '_blank');
-        }
-
-        function openAdmin() { document.getElementById('admin-modal').classList.remove('hidden'); }
-        function closeAdmin() { document.getElementById('admin-modal').classList.add('hidden'); }
 
         loadMenu();
     </script>
