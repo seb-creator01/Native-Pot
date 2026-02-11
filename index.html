@@ -11,26 +11,41 @@
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #fdfaf7; }
         .food-card:hover { transform: translateY(-10px); transition: 0.3s; }
-        /* Added for Cart animation */
         .cart-bounce { animation: bounce 0.5s; }
         @keyframes bounce { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); } }
         #admin-modal, #order-modal, #loading-overlay { background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); }
         
-        /* Force buttons to be clickable even if layers overlap */
-        button, footer, span { cursor: pointer !important; pointer-events: auto !important; position: relative; z-index: 10; }
+        button, footer, span { cursor: pointer !important; pointer-events: auto !important; position: relative; z-index: 20; }
         #admin-modal { z-index: 9999 !important; }
 
-        /* Spinner for the turbo upload */
         .spinner { border: 4px solid rgba(255,255,255,0.3); border-top: 4px solid #ea580c; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        /* Success Checkmark Animation */
+        .checkmark { width: 56px; height: 56px; border-radius: 50%; display: block; stroke-width: 2; stroke: #fff; stroke-miterlimit: 10; box-shadow: inset 0px 0px 0px #7ac142; animation: fill .4s ease-in-out .4s forwards, scale .3s ease-in-out .9s both; }
+        .checkmark__circle { stroke-dasharray: 166; stroke-dashoffset: 166; stroke-width: 2; stroke-miterlimit: 10; stroke: #7ac142; fill: none; animation: stroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards; }
+        .checkmark__check { transform-origin: 50% 50%; stroke-dasharray: 48; stroke-dashoffset: 48; animation: stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.8s forwards; }
+        @keyframes stroke { 100% { stroke-dashoffset: 0; } }
+        @keyframes scale { 0%, 100% { transform: none; } 50% { transform: scale3d(1.1, 1.1, 1); } }
+        @keyframes fill { 100% { box-shadow: inset 0px 0px 0px 30px #7ac142; } }
     </style>
 </head>
 <body class="pb-32">
 
-    <div id="loading-overlay" class="fixed inset-0 z-[10000] hidden flex flex-col items-center justify-center text-white">
-        <div class="spinner mb-4"></div>
-        <p class="font-bold animate-pulse text-lg">Cooking your new dish...</p>
-        <p class="text-sm text-gray-400 mt-2">Uploading to menu</p>
+    <div id="loading-overlay" class="fixed inset-0 z-[10000] hidden flex flex-col items-center justify-center text-white text-center p-6">
+        <div id="loader-content">
+            <div class="spinner mx-auto mb-4"></div>
+            <p class="font-bold animate-pulse text-lg">Cooking your new dish...</p>
+            <p class="text-sm text-gray-400 mt-2">Uploading to menu</p>
+        </div>
+        <div id="success-content" class="hidden">
+            <svg class="checkmark mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+                <circle class="checkmark__circle" cx="26" cy="26" r="25" fill="none"/>
+                <path class="checkmark__check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+            </svg>
+            <p class="text-2xl font-bold">Dish Added!</p>
+            <p class="text-gray-300">Refreshing your menu...</p>
+        </div>
     </div>
 
     <header class="p-6 bg-white shadow-sm sticky top-0 z-50">
@@ -46,32 +61,7 @@
     </section>
 
     <main id="menu-container" class="max-w-5xl mx-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
-        
-        <div class="food-card bg-white rounded-3xl overflow-hidden shadow-lg border border-orange-50 animate__animated animate__fadeInUp">
-            <div class="h-48 bg-orange-200 bg-[url('https://images.unsplash.com/photo-1574484284002-952d92456975?auto=format&fit=crop&w=800&q=80')] bg-cover bg-center"></div>
-            <div class="p-6">
-                <div class="flex justify-between items-center">
-                    <h3 class="text-xl font-bold text-gray-800">Special Jollof</h3>
-                    <span class="text-orange-700 font-bold">₦4,500</span>
-                </div>
-                <p class="text-gray-500 text-sm mt-2">Smokey party Jollof served with fried plantain and choice of protein.</p>
-                <button data-action="add" data-name="Special Jollof" data-price="4500" class="mt-6 w-full bg-orange-600 text-white py-3 rounded-2xl font-bold shadow-lg shadow-orange-200 active:scale-95 transition">Add to Pot</button>
-            </div>
-        </div>
-
-        <div class="food-card bg-white rounded-3xl overflow-hidden shadow-lg border border-orange-50 animate__animated animate__fadeInUp" style="animation-delay: 0.2s;">
-            <div class="h-48 bg-orange-200 bg-[url('https://images.unsplash.com/photo-1610614819513-58e34989848b?auto=format&fit=crop&w=800&q=80')] bg-cover bg-center"></div>
-            <div class="p-6">
-                <div class="flex justify-between items-center">
-                    <h3 class="text-xl font-bold text-gray-800">Egusi & Swallow</h3>
-                    <span class="text-orange-700 font-bold">₦5,000</span>
-                </div>
-                <p class="text-gray-500 text-sm mt-2">Rich Egusi soup with assorted meats, served with fluffy pounded yam.</p>
-                <button data-action="add" data-name="Egusi & Swallow" data-price="5000" class="mt-6 w-full bg-orange-600 text-white py-3 rounded-2xl font-bold shadow-lg shadow-orange-200 active:scale-95 transition">Add to Pot</button>
-            </div>
-        </div>
-
-    </main>
+        </main>
 
     <div id="checkout-bar" class="fixed bottom-8 left-4 right-4 max-w-md mx-auto bg-black rounded-3xl p-5 shadow-2xl flex justify-between items-center translate-y-40 transition-transform duration-500 z-[100]">
         <div>
@@ -90,13 +80,12 @@
                 <input type="text" id="food-name" placeholder="Dish Name (e.g. Abacha)" class="w-full p-4 mb-3 bg-gray-100 rounded-2xl outline-none">
                 <input type="number" id="food-price" placeholder="Price (₦)" class="w-full p-4 mb-3 bg-gray-100 rounded-2xl outline-none">
                 <input type="file" id="photo-file" accept="image/*" class="mb-4 text-sm w-full">
-                <button id="save-btn" class="w-full bg-orange-600 text-white py-4 rounded-2xl font-bold">Save to Site</button>
+                <button type="button" id="save-btn" class="w-full bg-orange-600 text-white py-4 rounded-2xl font-bold shadow-lg">Save to Site</button>
             </div>
 
-            <div id="delete-list" class="max-h-40 overflow-y-auto mb-4 text-left">
-                </div>
+            <div id="delete-list" class="max-h-40 overflow-y-auto mb-4 text-left"></div>
             
-            <button onclick="document.getElementById('admin-modal').classList.add('hidden')" class="w-full py-2 text-gray-400 font-bold text-center">Close Panel</button>
+            <button type="button" onclick="document.getElementById('admin-modal').classList.add('hidden')" class="w-full py-2 text-gray-400 font-bold text-center">Close Panel</button>
         </div>
     </div>
 
@@ -105,7 +94,6 @@
     </footer>
 
     <script>
-        // --- SECURE CONNECTIONS ---
         const SUPABASE_URL = "https://rsyssgwehiosunegiqpk.supabase.co";
         const SUPABASE_KEY = "sb_publishable_b3sp-SMXTG7_cwIeY--t8g_4X-CjYb0";
         const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/ddm87a9p2/image/upload";
@@ -115,40 +103,30 @@
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         let pot = [];
 
-        // --- GLOBAL EVENT LISTENER ---
         document.addEventListener('click', function(e) {
-            // Add to Pot (Dynamic and Static)
             const addBtn = e.target.closest('button[data-action="add"]') || (e.target.tagName === 'BUTTON' && e.target.innerText.includes('Add to Pot'));
             if (addBtn) {
                 const name = addBtn.getAttribute('data-name') || addBtn.parentElement.querySelector('h3').innerText;
                 const price = addBtn.getAttribute('data-price') || addBtn.parentElement.querySelector('.text-orange-700').innerText.replace('₦', '').replace(',', '');
                 addToPot(name, parseInt(price));
             }
-            // Clear Pot
             if (e.target.id === 'clear-pot-btn') {
-                if(confirm("Do you want to empty your pot?")) {
-                    pot = [];
-                    updateUI();
-                }
+                if(confirm("Do you want to empty your pot?")) { pot = []; updateUI(); }
             }
-            // Send Order
-            if (e.target.id === 'send-order-btn') {
-                sendOrder();
-            }
+            if (e.target.id === 'send-order-btn') sendOrder();
         });
 
         async function loadMenu() {
             try {
                 const { data, error } = await supabase.from('menu').select('*').order('created_at', { ascending: false });
-                if (error) throw error;
                 const container = document.getElementById('menu-container');
                 const deleteList = document.getElementById('delete-list');
                 
-                if (data && data.length > 0) {
+                if (data) {
                     container.innerHTML = ''; 
                     data.forEach(item => {
                         container.innerHTML += `
-                            <div class="food-card bg-white rounded-3xl overflow-hidden shadow-lg border border-orange-50 animate__animated animate__fadeInUp">
+                            <div class="food-card bg-white rounded-3xl overflow-hidden shadow-lg border border-orange-50">
                                 <div class="h-48 bg-cover bg-center" style="background-image: url('${item.image}')"></div>
                                 <div class="p-6">
                                     <div class="flex justify-between items-center">
@@ -157,27 +135,15 @@
                                     </div>
                                     <button data-action="add" data-name="${item.name}" data-price="${item.price}" class="mt-6 w-full bg-orange-600 text-white py-3 rounded-2xl font-bold">Add to Pot</button>
                                 </div>
-                            </div>
-                        `;
+                            </div>`;
                     });
 
                     deleteList.innerHTML = `<p class="text-xs font-bold text-gray-400 mb-2 uppercase">Tap to Delete:</p>` + 
-                        data.map(item => `
-                        <div data-delete-id="${item.id}" class="flex justify-between items-center p-2 mb-2 bg-red-50 text-red-600 rounded-lg text-sm cursor-pointer border border-red-100">
-                            <span>${item.name}</span>
-                            <span class="font-bold">🗑️</span>
-                        </div>
-                    `).join('');
+                        data.map(item => `<div data-delete-id="${item.id}" class="flex justify-between items-center p-2 mb-2 bg-red-50 text-red-600 rounded-lg text-sm cursor-pointer"><span>${item.name}</span><span>🗑️</span></div>`).join('');
                 }
             } catch (err) { console.log("Load error", err); }
         }
 
-        document.getElementById('delete-list').addEventListener('click', function(e) {
-            const deleteDiv = e.target.closest('[data-delete-id]');
-            if (deleteDiv) { deleteItem(deleteDiv.getAttribute('data-delete-id')); }
-        });
-
-        // --- TURBO COMPRESSION & UPLOAD ---
         function compressImage(file) {
             return new Promise((resolve) => {
                 const reader = new FileReader();
@@ -199,18 +165,23 @@
             });
         }
 
-        // CONSISTENT SAVE LOGIC
-        document.getElementById('save-btn').addEventListener('click', async function() {
+        const handleSave = async function() {
             const fileInput = document.getElementById('photo-file');
             const file = fileInput.files[0];
             const name = document.getElementById('food-name').value;
             const price = document.getElementById('food-price').value;
             const loader = document.getElementById('loading-overlay');
+            const saveBtn = document.getElementById('save-btn');
+            const loaderContent = document.getElementById('loader-content');
+            const successContent = document.getElementById('success-content');
 
-            if(!file || !name || !price) return alert("Please enter name, price, and select a photo!");
-            
+            if(!file || !name || !price) {
+                alert("Please select a photo and fill in all fields!");
+                return;
+            }
+
             loader.classList.remove('hidden');
-            this.disabled = true;
+            saveBtn.disabled = true;
 
             try {
                 const compressedBlob = await compressImage(file);
@@ -221,24 +192,42 @@
                 const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: formData });
                 const imgData = await res.json();
                 
-                const { error } = await supabase.from('menu').insert([{ name, price, image: imgData.secure_url }]);
+                if (!imgData.secure_url) throw new Error("Image could not be saved.");
+
+                const { error } = await supabase.from('menu').insert([{ 
+                    name: name, 
+                    price: price, 
+                    image: imgData.secure_url 
+                }]);
+                
                 if (error) throw error;
                 
-                location.reload();
+                // Show Success Message
+                loaderContent.classList.add('hidden');
+                successContent.classList.remove('hidden');
+                
+                setTimeout(() => location.reload(), 2000);
+
             } catch (err) {
-                alert("Error: " + err.message);
+                alert("Upload Failed: " + err.message);
                 loader.classList.add('hidden');
-                this.disabled = false;
+                saveBtn.disabled = false;
             }
-        });
+        };
+
+        document.getElementById('save-btn').onclick = handleSave;
 
         async function deleteItem(id) {
-            if(confirm("Remove this dish from the menu?")) {
-                const { error } = await supabase.from('menu').delete().eq('id', id);
-                if (error) alert("Delete failed");
-                else location.reload();
+            if(confirm("Remove this dish?")) {
+                await supabase.from('menu').delete().eq('id', id);
+                location.reload();
             }
         }
+
+        document.getElementById('delete-list').addEventListener('click', function(e) {
+            const deleteDiv = e.target.closest('[data-delete-id]');
+            if (deleteDiv) { deleteItem(deleteDiv.getAttribute('data-delete-id')); }
+        });
 
         function addToPot(name, price) {
             pot.push({name, price});
