@@ -44,7 +44,7 @@
                     <span class="text-orange-700 font-bold">₦4,500</span>
                 </div>
                 <p class="text-gray-500 text-sm mt-2">Smokey party Jollof served with fried plantain and choice of protein.</p>
-                <button onclick="addToPot('Special Jollof', 4500)" class="mt-6 w-full bg-orange-600 text-white py-3 rounded-2xl font-bold shadow-lg shadow-orange-200 active:scale-95 transition">Add to Pot</button>
+                <button data-action="add" data-name="Special Jollof" data-price="4500" class="mt-6 w-full bg-orange-600 text-white py-3 rounded-2xl font-bold shadow-lg shadow-orange-200 active:scale-95 transition">Add to Pot</button>
             </div>
         </div>
 
@@ -56,7 +56,7 @@
                     <span class="text-orange-700 font-bold">₦5,000</span>
                 </div>
                 <p class="text-gray-500 text-sm mt-2">Rich Egusi soup with assorted meats, served with fluffy pounded yam.</p>
-                <button onclick="addToPot('Egusi & Swallow', 5000)" class="mt-6 w-full bg-orange-600 text-white py-3 rounded-2xl font-bold shadow-lg shadow-orange-200 active:scale-95 transition">Add to Pot</button>
+                <button data-action="add" data-name="Egusi & Swallow" data-price="5000" class="mt-6 w-full bg-orange-600 text-white py-3 rounded-2xl font-bold shadow-lg shadow-orange-200 active:scale-95 transition">Add to Pot</button>
             </div>
         </div>
 
@@ -64,10 +64,10 @@
 
     <div id="checkout-bar" class="fixed bottom-8 left-4 right-4 max-w-md mx-auto bg-black rounded-3xl p-5 shadow-2xl flex justify-between items-center translate-y-40 transition-transform duration-500 z-[100]">
         <div>
-            <button onclick="clearPot()" class="text-gray-400 text-[10px] uppercase font-bold tracking-widest mb-1 underline block">Clear Pot</button>
+            <button id="clear-pot-btn" class="text-gray-400 text-[10px] uppercase font-bold tracking-widest mb-1 underline block">Clear Pot</button>
             <p id="total-price" class="text-white text-xl font-bold">₦0</p>
         </div>
-        <button onclick="sendOrder()" class="bg-orange-600 text-white px-8 py-3 rounded-xl font-extrabold active:scale-95 transition">Send Order</button>
+        <button id="send-order-btn" class="bg-orange-600 text-white px-8 py-3 rounded-xl font-extrabold active:scale-95 transition">Send Order</button>
     </div>
 
     <div id="admin-modal" class="fixed inset-0 z-[300] hidden flex items-center justify-center p-4 overflow-y-auto">
@@ -79,17 +79,17 @@
                 <input type="text" id="food-name" placeholder="Dish Name (e.g. Abacha)" class="w-full p-4 mb-3 bg-gray-100 rounded-2xl outline-none">
                 <input type="number" id="food-price" placeholder="Price (₦)" class="w-full p-4 mb-3 bg-gray-100 rounded-2xl outline-none">
                 <input type="file" id="photo-file" accept="image/*" class="mb-4 text-sm w-full">
-                <button id="save-btn" onclick="uploadAndSave()" class="w-full bg-orange-600 text-white py-4 rounded-2xl font-bold">Save to Site</button>
+                <button id="save-btn" class="w-full bg-orange-600 text-white py-4 rounded-2xl font-bold">Save to Site</button>
             </div>
 
             <div id="delete-list" class="max-h-40 overflow-y-auto mb-4 text-left">
                 </div>
             
-            <button onclick="closeAdmin()" class="w-full py-2 text-gray-400 font-bold text-center">Close Panel</button>
+            <button id="close-admin-btn" class="w-full py-2 text-gray-400 font-bold text-center">Close Panel</button>
         </div>
     </div>
 
-    <footer class="text-center py-12 text-gray-400 text-sm cursor-pointer relative z-[200]" onclick="openAdmin()">
+    <footer id="admin-trigger" class="text-center py-12 text-gray-400 text-sm cursor-pointer relative z-[200]">
         <p>&copy; 2026 Native Pot. All rights reserved. • <span class="underline text-orange-600 font-bold">Admin Access</span></p>
     </footer>
 
@@ -104,45 +104,38 @@
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         let pot = [];
 
-        // LOAD MENU (Moved inside a listener to prevent blocking buttons)
-        document.addEventListener('DOMContentLoaded', () => {
-            loadMenu();
+        // --- THE FIX: GLOBAL EVENT LISTENER ---
+        document.addEventListener('click', function(e) {
+            // Admin Open
+            if (e.target.closest('#admin-trigger')) {
+                document.getElementById('admin-modal').classList.remove('hidden');
+            }
+            // Admin Close
+            if (e.target.id === 'close-admin-btn') {
+                document.getElementById('admin-modal').classList.add('hidden');
+            }
+            // Add to Pot (Dynamic and Static)
+            const addBtn = e.target.closest('button[data-action="add"]') || (e.target.tagName === 'BUTTON' && e.target.innerText.includes('Add to Pot'));
+            if (addBtn) {
+                // If it's a dynamic button from Supabase, we look at the data attributes we added in loadMenu
+                const name = addBtn.getAttribute('data-name') || addBtn.parentElement.querySelector('h3').innerText;
+                const price = addBtn.getAttribute('data-price') || addBtn.parentElement.querySelector('.text-orange-700').innerText.replace('₦', '').replace(',', '');
+                addToPot(name, parseInt(price));
+            }
+            // Clear Pot
+            if (e.target.id === 'clear-pot-btn') {
+                if(confirm("Do you want to empty your pot?")) {
+                    pot = [];
+                    updateUI();
+                }
+            }
+            // Send Order
+            if (e.target.id === 'send-order-btn') {
+                sendOrder();
+            }
         });
 
-        // Global functions to ensure they are clickable everywhere
-        window.openAdmin = function() { 
-            console.log("Opening Admin...");
-            document.getElementById('admin-modal').classList.remove('hidden'); 
-        }
-        
-        window.closeAdmin = function() { 
-            document.getElementById('admin-modal').classList.add('hidden'); 
-        }
-        
-        window.addToPot = function(name, price) {
-            console.log("Adding to pot:", name);
-            pot.push({name, price});
-            updateUI();
-            const counter = document.getElementById('cart-counter');
-            counter.classList.add('cart-bounce');
-            setTimeout(() => counter.classList.remove('cart-bounce'), 500);
-        }
-
-        window.clearPot = function() {
-            if(confirm("Do you want to empty your pot?")) {
-                pot = [];
-                updateUI();
-            }
-        }
-
-        window.sendOrder = function() {
-            let itemsList = pot.map(item => `- ${item.name} (₦${item.price.toLocaleString()})`).join('\n');
-            let total = pot.reduce((sum, item) => sum + item.price, 0);
-            let message = `*NEW ORDER FROM NATIVE POT*\n\nItems:\n${itemsList}\n\n*Total: ₦${total.toLocaleString()}*\n\nPlease confirm my order!`;
-            const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
-            window.open(url, '_blank');
-        }
-
+        // Load Menu from Supabase
         async function loadMenu() {
             try {
                 const { data, error } = await supabase.from('menu').select('*').order('created_at', { ascending: false });
@@ -162,7 +155,7 @@
                                         <h3 class="text-xl font-bold text-gray-800">${item.name}</h3>
                                         <span class="text-orange-700 font-bold">₦${Number(item.price).toLocaleString()}</span>
                                     </div>
-                                    <button onclick="addToPot('${item.name}', ${item.price})" class="mt-6 w-full bg-orange-600 text-white py-3 rounded-2xl font-bold shadow-lg shadow-orange-200 active:scale-95 transition">Add to Pot</button>
+                                    <button data-action="add" data-name="${item.name}" data-price="${item.price}" class="mt-6 w-full bg-orange-600 text-white py-3 rounded-2xl font-bold shadow-lg shadow-orange-200 active:scale-95 transition">Add to Pot</button>
                                 </div>
                             </div>
                         `;
@@ -170,7 +163,7 @@
 
                     deleteList.innerHTML = `<p class="text-xs font-bold text-gray-400 mb-2 uppercase">Tap to Delete:</p>` + 
                         data.map(item => `
-                        <div onclick="deleteItem(${item.id})" class="flex justify-between items-center p-2 mb-2 bg-red-50 text-red-600 rounded-lg text-sm cursor-pointer border border-red-100">
+                        <div data-delete-id="${item.id}" class="flex justify-between items-center p-2 mb-2 bg-red-50 text-red-600 rounded-lg text-sm cursor-pointer border border-red-100">
                             <span>${item.name}</span>
                             <span class="font-bold">🗑️</span>
                         </div>
@@ -181,7 +174,16 @@
             }
         }
 
-        window.uploadAndSave = async function() {
+        // Handle Dynamic Deletes
+        document.getElementById('delete-list').addEventListener('click', function(e) {
+            const deleteDiv = e.target.closest('[data-delete-id]');
+            if (deleteDiv) {
+                const id = deleteDiv.getAttribute('data-delete-id');
+                deleteItem(id);
+            }
+        });
+
+        async function uploadAndSave() {
             const fileInput = document.getElementById('photo-file');
             const file = fileInput.files[0];
             const name = document.getElementById('food-name').value;
@@ -189,7 +191,6 @@
             const btn = document.getElementById('save-btn');
 
             if(!file || !name || !price) return alert("Please enter name, price, and select a photo!");
-
             btn.innerText = "Processing...";
             btn.disabled = true;
 
@@ -204,7 +205,6 @@
 
                 const { error } = await supabase.from('menu').insert([{ name, price, image: imgData.secure_url }]);
                 if (error) throw error;
-
                 location.reload();
             } catch (err) {
                 alert("Error: " + err.message);
@@ -213,12 +213,22 @@
             }
         }
 
-        window.deleteItem = async function(id) {
+        document.getElementById('save-btn').onclick = uploadAndSave;
+
+        async function deleteItem(id) {
             if(confirm("Remove this dish from the menu?")) {
                 const { error } = await supabase.from('menu').delete().eq('id', id);
                 if (error) alert("Delete failed: " + error.message);
                 else location.reload();
             }
+        }
+
+        function addToPot(name, price) {
+            pot.push({name, price});
+            updateUI();
+            const counter = document.getElementById('cart-counter');
+            counter.classList.add('cart-bounce');
+            setTimeout(() => counter.classList.remove('cart-bounce'), 500);
         }
 
         function updateUI() {
@@ -231,6 +241,17 @@
             if(pot.length > 0) bar.classList.remove('translate-y-40');
             else bar.classList.add('translate-y-40');
         }
+
+        function sendOrder() {
+            if (pot.length === 0) return;
+            let itemsList = pot.map(item => `- ${item.name} (₦${item.price.toLocaleString()})`).join('\n');
+            let total = pot.reduce((sum, item) => sum + item.price, 0);
+            let message = `*NEW ORDER FROM NATIVE POT*\n\nItems:\n${itemsList}\n\n*Total: ₦${total.toLocaleString()}*\n\nPlease confirm my order!`;
+            const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+            window.open(url, '_blank');
+        }
+
+        loadMenu();
     </script>
 </body>
 </html>
